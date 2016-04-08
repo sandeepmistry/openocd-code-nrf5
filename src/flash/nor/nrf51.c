@@ -372,6 +372,14 @@ static const struct nrf51_device_spec nrf51_known_devices_table[] = {
 		.build_code	= "AB",
 		.flash_size_kb	= 256,
 	},
+
+	/* nRF52832 Devices (IC rev 1). */
+	{
+		.hwid		= 0x00C7,
+		.variant	= "QFN48",
+		.build_code	= "B00",
+		.flash_size_kb	= 512,
+	},
 };
 
 static int nrf51_bank_is_probed(struct flash_bank *bank)
@@ -659,13 +667,13 @@ static int nrf51_probe(struct flash_bank *bank)
 			return res;
 		}
 
-		if (spec && chip->code_memory_size != spec->flash_size_kb) {
+		if (spec && (chip->code_memory_size * chip->code_page_size / 1024) != spec->flash_size_kb) {
 			LOG_ERROR("Chip's reported Flash capacity does not match expected one");
 			return ERROR_FAIL;
 		}
 
-		bank->size = chip->code_memory_size * 1024;
-		bank->num_sectors = bank->size / chip->code_page_size;
+		bank->size = chip->code_memory_size * chip->code_page_size;
+		bank->num_sectors = chip->code_memory_size;
 		bank->sectors = calloc(bank->num_sectors,
 				       sizeof((bank->sectors)[0]));
 		if (!bank->sectors)
@@ -1274,7 +1282,7 @@ static int nrf51_info(struct flash_bank *bank, char *buf, int buf_size)
 		 "reset value for XTALFREQ: %"PRIx32"\n"
 		 "firmware id: 0x%04"PRIx32,
 		 ficr[0].value,
-		 ficr[1].value,
+		 ficr[1].value * ficr[0].value / 1024,
 		 (ficr[2].value == 0xFFFFFFFF) ? 0 : ficr[2].value / 1024,
 		 ((ficr[3].value & 0xFF) == 0x00) ? "present" : "not present",
 		 ficr[4].value,
