@@ -1,0 +1,29 @@
+os:
+  - osx
+language: cpp
+before_install:
+  - brew update
+  - brew upgrade libtool automake
+  - brew install libusb libusb-compat hidapi libftdi
+script:
+  - ./bootstrap
+  - ./configure --prefix="$PWD/root/openocd" --datarootdir="$PWD/root"
+  - make bindir="bin" pkgdatadir=""
+  - make install
+  - otool -L root/openocd/bin/openocd
+  - cp /usr/local/opt/hidapi/lib/libhidapi.0.dylib root/openocd/bin/
+  - cp /usr/local/opt/libusb-compat/lib/libusb-0.1.4.dylib root/openocd/bin/
+  - cp /usr/local/opt/libusb/lib/libusb-1.0.0.dylib root/openocd/bin/
+  - chmod +w root/openocd/bin/*.dylib
+  - install_name_tool -id libhidapi.0.dylib root/openocd/bin/libhidapi.0.dylib
+  - install_name_tool -id libusb-0.1.4.dylib root/openocd/bin/libusb-0.1.4.dylib
+  - install_name_tool -id libusb-1.0.0.dylib root/openocd/bin/libusb-1.0.0.dylib
+  - install_name_tool -change /usr/local/lib/libusb-1.0.0.dylib "@executable_path/libusb-1.0.0.dylib" root/openocd/bin/libusb-0.1.4.dylib
+  - chmod -w root/openocd/bin/*.dylib
+  - install_name_tool -change /usr/local/opt/hidapi/lib/libhidapi.0.dylib "@executable_path/libhidapi.0.dylib" root/openocd/bin/openocd
+  - install_name_tool -change /usr/local/opt/libusb-compat/lib/libusb-0.1.4.dylib "@executable_path/libusb-0.1.4.dylib" root/openocd/bin/openocd
+  - install_name_tool -change /usr/local/opt/libusb/lib/libusb-1.0.0.dylib "@executable_path/libusb-1.0.0.dylib" root/openocd/bin/openocd
+  - otool -L root/openocd/bin/openocd
+  - tar -C root -cvzf openocd.tar.gz openocd
+  - hexdump -ve '1/1 "%.2x"' openocd.tar.gz
+
